@@ -13,6 +13,9 @@ class ByteStream
 protected:
   uint64_t capacity_;
   // Please add any additional state to the ByteStream here, and not to the Writer and Reader interfaces.
+  std::string buffer_;
+  bool closed_, error_;
+  uint64_t bytes_pushed_, bytes_popped_;
 
 public:
   explicit ByteStream( uint64_t capacity );

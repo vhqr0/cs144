@@ -6,11 +6,11 @@ Reassembler::Piece::Piece( uint64_t first, uint64_t last, std::string data, bool
   : first_( first ), last_( last ), data_( data ), eof_( eof )
 {}
 
-Reassembler::Reassembler() : index_( 0 ), pieces_() {}
+Reassembler::Reassembler() : pieces_() {}
 
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring, Writer& output )
 {
-  uint64_t min_index = index_;
+  uint64_t min_index = output.bytes_pushed();
   uint64_t max_index = min_index + output.available_capacity();
   uint64_t last_index = first_index + data.length();
 
@@ -56,8 +56,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   swap( new_pieces, pieces_ );
 
   const Piece& front = pieces_.front();
-  if ( front.first_ == index_ ) {
-    index_ = front.last_;
+  if ( front.first_ == min_index ) {
     output.push( front.data_ );
     if ( front.eof_ )
       output.close();

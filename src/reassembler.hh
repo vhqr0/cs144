@@ -15,7 +15,6 @@ class Reassembler
 
     Piece( uint64_t first, uint64_t last, std::string data, bool eof );
   };
-  uint64_t index_;
   std::list<Piece> pieces_;
 
 public:

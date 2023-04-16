@@ -1,5 +1,5 @@
-#include <stdexcept>
 #include <algorithm>
+#include <stdexcept>
 
 #include "byte_stream.hh"
 
@@ -11,8 +11,8 @@ ByteStream::ByteStream( uint64_t capacity )
 
 void Writer::push( string data )
 {
-  uint64_t to_push = min(data.length(), available_capacity());
-  buffer_ += data.substr(0, to_push);
+  uint64_t to_push = min( data.length(), available_capacity() );
+  buffer_ += data.substr( 0, to_push );
   bytes_pushed_ += to_push;
 }
 
@@ -58,8 +58,8 @@ bool Reader::has_error() const
 
 void Reader::pop( uint64_t len )
 {
-  uint64_t to_pop = min(buffer_.length(), len);
-  buffer_ = buffer_.substr(to_pop);
+  uint64_t to_pop = min( buffer_.length(), len );
+  buffer_ = buffer_.substr( to_pop );
   bytes_popped_ += to_pop;
 }
 

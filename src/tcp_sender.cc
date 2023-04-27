@@ -114,12 +114,11 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
     refresh = true;
     outstanding_segs_.pop_front();
   }
-  if ( ackno > ackno_ ) {
-    uint64_t windiff = ackno - ackno_;
-    winsize_ = windiff > winsize_ ? 0 : winsize_ - windiff;
-    ackno_ = ackno;
-  }
-  winsize_ = max( winsize_, msg.window_size + ackno - ackno_ );
+
+  uint64_t edge = max( ackno + msg.window_size, ackno_ + winsize_ );
+  ackno_ = max( ackno, ackno_ );
+  winsize_ = edge - ackno_;
+
   if ( !refresh )
     return;
 

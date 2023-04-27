@@ -138,7 +138,7 @@ void TCPSender::tick( const size_t ms_since_last_tick )
     return;
   }
   segs_.push_front( outstanding_segs_.front() );
-  if ( winsize_ != 0 || outstanding_segs_.front().bof_) {
+  if ( winsize_ != 0 || outstanding_segs_.front().bof_ ) {
     ++consecutive_retransmissions_;
     RTO_ms_ *= 2;
   }

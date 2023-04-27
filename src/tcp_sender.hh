@@ -8,7 +8,8 @@
 
 class TCPSender
 {
-  struct Segment {
+  struct Segment
+  {
     uint64_t first_, last_;
     std::string data_;
     bool bof_, eof_;
@@ -16,7 +17,7 @@ class TCPSender
     Segment( uint64_t first, std::string data, bool bof, bool eof );
     Segment( uint64_t first, uint64_t last, std::string data, bool bof, bool eof );
 
-    TCPSenderMessage message(Wrap32 isn);
+    TCPSenderMessage message( Wrap32 isn );
   };
 
   Wrap32 isn_;

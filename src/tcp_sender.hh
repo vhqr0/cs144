@@ -4,10 +4,33 @@
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
 
+#include <list>
+
 class TCPSender
 {
+  struct Segment {
+    uint64_t first_, last_;
+    std::string data_;
+    bool bof_, eof_;
+
+    Segment( uint64_t first, std::string data, bool bof, bool eof );
+    Segment( uint64_t first, uint64_t last, std::string data, bool bof, bool eof );
+
+    TCPSenderMessage message(Wrap32 isn);
+  };
+
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
+
+  uint64_t RTO_ms_;
+  uint64_t TO_ms_;
+  uint64_t consecutive_retransmissions_;
+  uint64_t seqno_;
+  uint64_t ackno_;
+  uint64_t winsize_;
+  std::list<Segment> segs_;
+  std::list<Segment> outstanding_segs_;
+  bool eof_sent_;
 
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */

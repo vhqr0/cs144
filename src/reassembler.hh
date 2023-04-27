@@ -7,15 +7,16 @@
 
 class Reassembler
 {
-  struct Piece
+  struct Segment
   {
     uint64_t first_, last_;
     std::string data_;
     bool eof_;
 
-    Piece( uint64_t first, uint64_t last, std::string data, bool eof );
+    Segment( uint64_t first, std::string data, bool eof );
+    Segment( uint64_t first, uint64_t last, std::string data, bool eof );
   };
-  std::list<Piece> pieces_;
+  std::list<Segment> segs_;
 
 public:
   /*

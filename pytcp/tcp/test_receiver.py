@@ -389,7 +389,7 @@ class TestReceiverClose(unittest.TestCase):
     def test_close1(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn + 0), True, False, b''))
         self.assertFalse(test.is_closed())
@@ -404,7 +404,7 @@ class TestReceiverClose(unittest.TestCase):
     def test_close2(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn + 0), True, False, b''))
         self.assertFalse(test.is_closed())
@@ -424,23 +424,23 @@ class TestReceiverSpecial(unittest.TestCase):
     def test_segment_before_syn(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn + 1), False, False, b'hello'))
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.pop(), b'')
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, False, b''))
-        self.assertTrue(test.receiver_message().ackno is not None)
+        self.assertIsNotNone(test.receiver_message().ackno)
         self.assertFalse(test.is_closed())
         self.assertEqual(test.receiver_message().ackno, Wrap32(isn + 1))
 
     def test_segment_with_syn_data(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, False, b'Hello, CS144!'))
         self.assertEqual(test.receiver_message().ackno, Wrap32(isn + 14))
@@ -451,7 +451,7 @@ class TestReceiverSpecial(unittest.TestCase):
     def test_empty_segment(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, False, b''))
         self.assertEqual(test.receiver_message().ackno, Wrap32(isn + 1))
@@ -471,7 +471,7 @@ class TestReceiverSpecial(unittest.TestCase):
         test = Receiver(4000)
         isn = random.getrandbits(32)
         buf = b'Here\'s a null byte:\x00and it\'s gone.'
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, False, b''))
         self.assertEqual(test.bytes_pending(), 0)
@@ -485,7 +485,7 @@ class TestReceiverSpecial(unittest.TestCase):
     def test_segment_with_data_fin(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, False, b''))
         test.receive_sender_message(
@@ -498,7 +498,7 @@ class TestReceiverSpecial(unittest.TestCase):
     def test_segment_with_fin(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, False, b''))
         test.receive_sender_message(
@@ -516,7 +516,7 @@ class TestReceiverSpecial(unittest.TestCase):
     def test_segment_with_syn_payload_fin(self):
         test = Receiver(4000)
         isn = random.getrandbits(32)
-        self.assertFalse(test.receiver_message().ackno is not None)
+        self.assertIsNone(test.receiver_message().ackno)
         test.receive_sender_message(
             SenderMessage(Wrap32(isn), True, True,
                           b'Hello and goodbye, CS144!'))

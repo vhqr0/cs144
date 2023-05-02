@@ -14,6 +14,8 @@ class Converter:
     cbool2lt = {'true': 'Less', 'false': 'GreaterEqual'}
     cbool2ge = {'true': 'GreaterEqual', 'false': 'Less'}
     cbool2le = {'true': 'LessEqual', 'false': 'Greater'}
+    cbool2eq = {'true': 'Equal', 'false': 'NotEqual'}
+    cbool2neq = {'true': 'NotEqual', 'false': 'Equal'}
     cbool2none = {'true': 'IsNone', 'false': 'IsNotNone'}
     cbool2notnone = {'true': 'IsNotNone', 'false': 'IsNone'}
 
@@ -106,32 +108,28 @@ class CopyArgsConverter(FuncArgsMixin, Converter):
         return out % cls.cstr_sub(args)
 
 
-class BoolAssertConverter(Converter):
+class BoolAssertConverter(FuncArgsMixin, Converter):
     """
     Example:
       test.execute( IsClosed { false } )
       => self.assertFalse(test.is_closed())
     """
-    action_re = re.compile(r'^([^\s]+) \{ (true|false) \}$')
     func_dict: dict[str, str] = {
         'IsClosed': 'test.is_closed()',
         'IsFinished': 'test.is_finished()',
         'HasError': 'test.has_error()',
-        'BufferEmpty': 'test.bytes_buffered() == 0',
-        'HasAckno': 'test.receiver_message().ackno is not None',
     }
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        action_match = cls.action_re.match(action)
-        if action_match is None:
+        funcargs = cls.get_func_args(action)
+        if funcargs is None:
             return None
-        func = action_match[1].strip()
-        arg = action_match[2].strip()
+        func, args = funcargs
         out = cls.func_dict.get(func)
         if out is None:
             return None
-        return f'self.assert{arg.capitalize()}({out})'
+        return f'self.assert{args.capitalize()}({out})'
 
 
 class EqualAssertConverter(FuncArgsMixin, Converter):
@@ -181,6 +179,19 @@ class InsertConverter(FuncArgsMixin, Converter):
         arg1 = cls.cstr_sub(arg12[0].strip())
         arg2 = arg12[1].strip()
         return f'test.insert({arg2}, {arg1})'
+
+
+class BufferEmptyConverter(FuncArgsMixin, Converter):
+
+    @classmethod
+    def convert_action(cls, action: str) -> Optional[str]:
+        funcargs = cls.get_func_args(action)
+        if funcargs is None:
+            return None
+        func, args = funcargs
+        if func != 'BufferEmpty':
+            return None
+        return (f'self.assert{cls.cbool2eq[args]}(test.bytes_buffered(), 0)')
 
 
 class CloseConverter(Converter):
@@ -251,6 +262,19 @@ class TickConverter(Converter):
                 f'self.assert{cls.cbool2gt[max_retx_exceeded]}('
                 'test.consecutive_retransmissions(), MAX_RETX_ATTEMPTS)')
         return '; '.join(out)
+
+
+class HasAcknoConverter(FuncArgsMixin, Converter):
+
+    @classmethod
+    def convert_action(cls, action: str) -> Optional[str]:
+        funcargs = cls.get_func_args()
+        if funcargs is None:
+            return None
+        func, args = funcargs
+        if func != 'HasAckno':
+            return None
+        return f'self.assert{cls.cbool2notnone}(test.receiver_message().ackno)'
 
 
 class ExpectAcknoConverter(Converter):

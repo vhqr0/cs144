@@ -63,37 +63,46 @@ class FuncArgsMixin:
         args = action_match[2].strip()
         return func, args
 
-
-class NoArgConverter(Converter):
-    """
-    Example:
-      test.execute( Close {} )
-      => test.close()
-    """
-    action_re = re.compile(r'^([^\s]+) \{\}$')
-    func_dict: dict[str, str] = {
-        'SetError': 'test.set_error()',
-        # 'Close': 'test.close()',
-    }
+    @classmethod
+    def get_args(cls, action: str, efunc: str) -> Optional[str]:
+        funcargs = cls.get_func_args(action)
+        if funcargs is None:
+            return None
+        func, args = funcargs
+        if func != efunc:
+            return None
+        return args
 
     @classmethod
-    def convert_action(cls, action: str) -> Optional[str]:
-        action_match = cls.action_re.match(action)
-        if action_match is None:
-            return None
-        func = action_match[1].strip()
-        return cls.func_dict.get(func)
+    def expect_func(cls, action: str, efunc: str) -> bool:
+        return cls.get_args(action, efunc) is not None
+
+
+class Wrap32StripMixin:
+    wrap32_re = re.compile(r'^Wrap32 \{(.*)\}$')
+
+    @classmethod
+    def wrap32_strip(cls, arg: str) -> str:
+        wrap32_match = cls.wrap32_re.match(arg)
+        if wrap32_match is not None:
+            return wrap32_match[1].strip()
+        return arg
 
 
 class CopyArgsConverter(FuncArgsMixin, Converter):
     """
     Example:
+      test.execute( Close {} )
+      => test.close()
+
       test.execute( Push { "hello" } )
       => test.push(b'hello')
     """
     func_dict = {
-        'Pop': 'test.pop(%s)',
-        # 'Push': 'test.push(%s)',
+        # 'Close': 'test.close',
+        # 'Push': 'test.push',
+        'SetError': 'test.set_error',
+        'Pop': 'test.pop',
     }
 
     @classmethod
@@ -105,7 +114,7 @@ class CopyArgsConverter(FuncArgsMixin, Converter):
         out = cls.func_dict.get(func)
         if out is None:
             return None
-        return out % cls.cstr_sub(args)
+        return f'{out}({args})'
 
 
 class BoolAssertConverter(FuncArgsMixin, Converter):
@@ -166,16 +175,12 @@ class InsertConverter(FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        funcargs = cls.get_func_args(action)
-        if funcargs is None:
-            return funcargs
-        func, args = funcargs
-        if func != 'Insert':
+        args = cls.get_args(action, 'Insert')
+        if args is None:
             return None
         arg12 = args.split(',')
         if len(arg12) != 2:
             return None
-        arg1, arg2 = arg12
         arg1 = cls.cstr_sub(arg12[0].strip())
         arg2 = arg12[1].strip()
         return f'test.insert({arg2}, {arg1})'
@@ -185,21 +190,19 @@ class BufferEmptyConverter(FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        funcargs = cls.get_func_args(action)
-        if funcargs is None:
-            return None
-        func, args = funcargs
-        if func != 'BufferEmpty':
+        args = cls.get_args(action, 'BufferEmpty')
+        if args is None:
             return None
         return (f'self.assert{cls.cbool2eq[args]}(test.bytes_buffered(), 0)')
 
 
-class CloseConverter(Converter):
+class CloseConverter(FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        if action == 'Close {}':
-            return 'test.close(); test.fill()'
+        if not cls.expect_func(action, 'Close'):
+            return None
+        return 'test.close(); test.fill()'
 
 
 class PushConverter(Converter):
@@ -268,50 +271,42 @@ class HasAcknoConverter(FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        funcargs = cls.get_func_args()
-        if funcargs is None:
+        args = cls.get_args(action, 'HasAckno')
+        if args is None:
             return None
-        func, args = funcargs
-        if func != 'HasAckno':
-            return None
-        return f'self.assert{cls.cbool2notnone}(test.receiver_message().ackno)'
+        return (f'self.assert{cls.cbool2notnone[args]}('
+                'test.receiver_message().ackno)')
 
 
-class ExpectAcknoConverter(Converter):
-    action_re1 = re.compile(r'^ExpectAckno \{ std::optional<Wrap32> \{\} \}$')
-    action_re2 = re.compile(r'^ExpectAckno \{ Wrap32 \{(.*)\} \}$')
+class ExpectAcknoConverter(Wrap32StripMixin, FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        action_match1 = cls.action_re1.match(action)
-        if action_match1 is not None:
+        args = cls.get_args(action, 'ExpectAckno')
+        if args is None:
+            return None
+        if args == 'std::optional<Wrap32> {}':
             return 'self.assertIsNone(test.receiver_message().ackno)'
-        action_match2 = cls.action_re2.match(action)
-        if action_match2 is not None:
-            arg = action_match2[1].strip()
-            return ('self.assertEqual(test.receiver_message().ackno, '
-                    f'Wrap32({arg}))')
-        return None
+        return ('self.assertEqual(test.receiver_message().ackno, '
+                f'Wrap32({cls.wrap32_strip(args)})')
 
 
-class ExpectSeqnoConverter(Converter):
-    action_re = re.compile(r'^ExpectSeqno \{(.*)\}$')
+class ExpectSeqnoConverter(Wrap32StripMixin, FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        action_match = cls.action_re.match(action)
-        if action_match is None:
+        args = cls.get_args(action, 'ExpectSeqno')
+        if args is None:
             return None
-        arg = action_match[1].strip()
         return ('self.assertEqual(test.empty_sender_message().seqno, '
-                f'Wrap32({arg}))')
+                f'Wrap32({cls.wrap32_strip(args)}))')
 
 
-class ExpectNoSegmentConverter(Converter):
+class ExpectNoSegmentConverter(FuncArgsMixin, Converter):
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        if action != 'ExpectNoSegment {}':
+        if not cls.expect_func(action, 'ExpectNoSegment'):
             return None
         return 'self.assertIsNone(test.optional_sender_message())'
 
@@ -375,23 +370,16 @@ class SegmentArrivesConverter(Converter):
                 f'SenderMessage(Wrap32({seqno}), {syn}, {fin}, {data}))')
 
 
-class AckReceivedConverter(Converter):
-    action_re1 = re.compile(r'^AckReceived \{ Wrap32 \{([^\}]*)\} \}')
-    action_re2 = re.compile(r'^AckReceived \{([^\}]*)\}')
+class AckReceivedConverter(Wrap32StripMixin, Converter):
+    action_re = re.compile(r'^AckReceived \{([^\}]*)\}')
     win_re = re.compile(r'\.with_win\(([^\)]*)\)')
 
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
-        action_match = None
-        action_match1 = cls.action_re1.match(action)
-        action_match2 = cls.action_re2.match(action)
-        if action_match1 is not None:
-            action_match = action_match1
-        elif action_match2 is not None:
-            action_match = action_match2
-        else:
+        action_match = cls.action_re.match(action)
+        if action_match is None:
             return None
-        arg = action_match[1].strip()
+        arg = cls.wrap32_strip(action_match[1])
         win = 'win'
         win_match = cls.win_re.search(action)
         if win_match is not None:

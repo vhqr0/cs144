@@ -11,7 +11,7 @@ class TestReceiverConnect(unittest.TestCase):
     def test_connect1(self):
         test = Receiver(4000)
         self.assertEqual(test.receiver_message().winsize, 4000)
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(SenderMessage(Wrap32(0), True, False, b''))
@@ -21,7 +21,7 @@ class TestReceiverConnect(unittest.TestCase):
 
     def test_connect2(self):
         test = Receiver(5453)
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(
@@ -32,34 +32,34 @@ class TestReceiverConnect(unittest.TestCase):
 
     def test_connect3(self):
         test = Receiver(5435)
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(
             SenderMessage(Wrap32(893475), False, False, b''))
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
 
     def test_connect4(self):
         test = Receiver(5435)
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(
             SenderMessage(Wrap32(893475), False, True, b''))
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
 
     def test_connect5(self):
         test = Receiver(5435)
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(
             SenderMessage(Wrap32(893475), False, True, b''))
-        self.assertEqual(test.receiver_message().ackno, None)
+        self.assertIsNone(test.receiver_message().ackno)
         self.assertEqual(test.bytes_pending(), 0)
         self.assertEqual(test.bytes_pushed(), 0)
         test.receive_sender_message(

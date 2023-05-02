@@ -9,6 +9,13 @@ class Converter:
     converters: list[type['Converter']] = []
     exec_re = re.compile(r'^test.execute\((.*)\);$')
     cstr_sub_re = re.compile(r'"([^"]*)"')
+    cbool2bool = {'true': 'True', 'false': 'False'}
+    cbool2gt = {'true': 'Greater', 'false': 'LessEqual'}
+    cbool2lt = {'true': 'Less', 'false': 'GreaterEqual'}
+    cbool2ge = {'true': 'GreaterEqual', 'false': 'Less'}
+    cbool2le = {'true': 'LessEqual', 'false': 'Greater'}
+    cbool2none = {'true': 'IsNone', 'false': 'IsNotNone'}
+    cbool2notnone = {'true': 'IsNotNone', 'false': 'IsNone'}
 
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
@@ -177,6 +184,7 @@ class InsertConverter(FuncArgsMixin, Converter):
 
 
 class CloseConverter(Converter):
+
     @classmethod
     def convert_action(cls, action: str) -> Optional[str]:
         if action == 'Close {}':
@@ -222,8 +230,8 @@ class TickConverter(Converter):
       => test.tick(1)
 
       test.execute( Tick { 1 }.with_max_retx_exceeded( true ) )
-      => test.tick(1); self.assertTrue(
-           test.consecutive_retransmissions() > MAX_RETX_ATTEMPTS)
+      => test.tick(1); self.assertGreater(
+           test.consecutive_retransmissions(), MAX_RETX_ATTEMPTS)
     """
     action_re = re.compile(r'^Tick \{([^\}]*)\}')
     max_retx_exceeded_re = re.compile(
@@ -240,8 +248,8 @@ class TickConverter(Converter):
         if max_retx_exceeded_match is not None:
             max_retx_exceeded = max_retx_exceeded_match[1]
             out.append(
-                f'self.assert{max_retx_exceeded.capitalize()}('
-                'test.consecutive_retransmissions() > MAX_RETX_ATTEMPTS)')
+                f'self.assert{cls.cbool2gt[max_retx_exceeded]}('
+                'test.consecutive_retransmissions(), MAX_RETX_ATTEMPTS)')
         return '; '.join(out)
 
 
@@ -253,7 +261,7 @@ class ExpectAcknoConverter(Converter):
     def convert_action(cls, action: str) -> Optional[str]:
         action_match1 = cls.action_re1.match(action)
         if action_match1 is not None:
-            return 'self.assertEqual(test.receiver_message().ackno, None)'
+            return 'self.assertIsNone(test.receiver_message().ackno)'
         action_match2 = cls.action_re2.match(action)
         if action_match2 is not None:
             arg = action_match2[1].strip()
@@ -281,7 +289,7 @@ class ExpectNoSegmentConverter(Converter):
     def convert_action(cls, action: str) -> Optional[str]:
         if action != 'ExpectNoSegment {}':
             return None
-        return 'self.assertEqual(test.optional_sender_message(), None)'
+        return 'self.assertIsNone(test.optional_sender_message())'
 
 
 class ExpectMessageConverter(Converter):
@@ -297,7 +305,7 @@ class ExpectMessageConverter(Converter):
             return None
         out = [
             'msg = test.optional_sender_message()',
-            'self.assertTrue(len(msg.payload) <= SENDER_MSS)',
+            'self.assertLessEqual(len(msg.payload), SENDER_MSS)',
         ]
         if action.find('.with_syn') >= 0:
             out.append('self.assertTrue(msg.syn)')

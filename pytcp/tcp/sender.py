@@ -53,12 +53,13 @@ class Sender(Stream):
         self.__eof_sent = False
 
         self.__irto = irto
-        self.__rto = 0
+        self.__rto = irto
         self.__to = 0
         self.__consecutive_retransmissions = 0
 
         self.__segs = deque()
         self.__outstanding_segs = deque()
+        self.__segs.append(_Segment(0, 1, b'', True, False))
 
     @property
     def __last_seqno(self):
@@ -141,8 +142,8 @@ class Sender(Stream):
 
         self.__rto = self.__irto
         if len(self.__outstanding_segs) > 0:
-            self.__to == self.__rto
-        self.__consecutive_retransmissions += 1
+            self.__to = self.__rto
+        self.__consecutive_retransmissions = 0
 
     def tick(self, ms_since_last_tick: int):
         if len(self.__outstanding_segs) == 0:

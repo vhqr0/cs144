@@ -21,6 +21,7 @@ test:
 	python3 -m tcp.test_reassembler
 	python3 -m tcp.test_wrap32
 	python3 -m tcp.test_receiver
+	python3 -m tcp.test_sender
 
 viz:
 	pyreverse -m n -k --colorized -o png tcp

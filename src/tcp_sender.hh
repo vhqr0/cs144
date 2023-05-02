@@ -31,7 +31,7 @@ class TCPSender
   uint64_t winsize_;
   std::list<Segment> segs_;
   std::list<Segment> outstanding_segs_;
-  bool eof_sent_;
+  bool bof_sent_, eof_sent_;
 
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */

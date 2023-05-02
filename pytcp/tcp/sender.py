@@ -28,6 +28,7 @@ class Sender(Stream):
     __ackno: int
     __mss: int
     __winsize: int
+    __bof_sent: bool
     __eof_sent: bool
 
     __irto: int
@@ -50,6 +51,7 @@ class Sender(Stream):
         self.__ackno = 0
         self.__mss = mss
         self.__winsize = 0
+        self.__bof_sent = False
         self.__eof_sent = False
 
         self.__irto = irto
@@ -59,7 +61,6 @@ class Sender(Stream):
 
         self.__segs = deque()
         self.__outstanding_segs = deque()
-        self.__segs.append(_Segment(0, 1, b'', True, False))
 
     @property
     def __last_seqno(self):
@@ -82,6 +83,17 @@ class Sender(Stream):
         return seg
 
     def fill(self):
+        if not self.__bof_sent:
+            seg = self.__ensure_last_seg()
+            seg.bof = True
+            seg.last += 1
+            self.__bof_sent = True
+            if self.is_finished():
+                seg.eof = True
+                seg.last += 1
+                self.__eof_sent = True
+            return
+
         if self.__eof_sent:
             return
 

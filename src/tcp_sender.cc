@@ -28,8 +28,9 @@ TCPSender::TCPSender( uint64_t initial_RTO_ms, optional<Wrap32> fixed_isn )
   , seqno_( 0 )
   , ackno_( 0 )
   , winsize_( 0 )
-  , segs_( { { 0, 1, "", true, false } } )
+  , segs_( {} )
   , outstanding_segs_()
+  , bof_sent_( false )
   , eof_sent_( false )
 {}
 
@@ -61,6 +62,17 @@ optional<TCPSenderMessage> TCPSender::maybe_send()
 
 void TCPSender::push( Reader& outbound_stream )
 {
+  if ( !bof_sent_ ) {
+    segs_.push_front( { 0, 1, "", true, false } );
+    bof_sent_ = true;
+    if ( outbound_stream.is_finished() ) {
+      segs_.front().eof_ = true;
+      ++segs_.front().last_;
+      eof_sent_ = true;
+    }
+    return;
+  }
+
   if ( eof_sent_ )
     return;
 

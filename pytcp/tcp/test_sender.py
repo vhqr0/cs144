@@ -57,6 +57,7 @@ class TestSenderConnect(unittest.TestCase):
 
     def test_syn_acked_data(self):
         test = Sender(isn=isn)
+        test.fill()
         msg = test.optional_sender_message()
         self.assertLessEqual(len(msg.payload), SENDER_MSS)
         self.assertTrue(msg.syn)
@@ -339,6 +340,7 @@ class TestSenderRetx(unittest.TestCase):
 
     def test_send_some_data_till_limit(self):
         test = Sender(isn=isn, irto=irto)
+        test.fill()
         msg = test.optional_sender_message()
         self.assertLessEqual(len(msg.payload), SENDER_MSS)
         self.assertTrue(msg.syn)
